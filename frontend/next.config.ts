@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  reactStrictMode: true,
+  // Strict Mode double-mounts components; Clerk + Cloudflare Turnstile in modals often break (widget 300010 / "Cannot find Widget").
+  reactStrictMode: false,
   output: 'export',
   images: {
     unoptimized: true

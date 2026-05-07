@@ -7,7 +7,11 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 export default function App({ Component, pageProps }: AppProps) {
   return (
     <ErrorBoundary>
-      <ClerkProvider {...pageProps}>
+      <ClerkProvider
+        {...pageProps}
+        signInFallbackRedirectUrl="/dashboard"
+        signUpFallbackRedirectUrl="/dashboard"
+      >
         <Component {...pageProps} />
         <ToastContainer />
       </ClerkProvider>

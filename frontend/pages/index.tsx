@@ -17,12 +17,12 @@ export default function Home() {
           </div>
           <div className="flex gap-4">
             <SignedOut>
-              <SignInButton mode="modal">
+              <SignInButton mode="modal" fallbackRedirectUrl="/dashboard">
                 <button className="px-6 py-2 text-primary border border-primary rounded-lg hover:bg-primary hover:text-white transition-colors">
                   Sign In
                 </button>
               </SignInButton>
-              <SignUpButton mode="modal">
+              <SignUpButton mode="modal" fallbackRedirectUrl="/dashboard">
                 <button className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-blue-600 transition-colors">
                   Get Started
                 </button>
@@ -54,7 +54,7 @@ export default function Home() {
           </p>
           <div className="flex gap-6 justify-center">
             <SignedOut>
-              <SignUpButton mode="modal">
+              <SignUpButton mode="modal" fallbackRedirectUrl="/dashboard">
                 <button className="px-8 py-4 bg-ai-accent text-white text-lg rounded-lg hover:bg-purple-700 transition-colors shadow-lg">
                   Start Your Analysis
                 </button>
@@ -140,7 +140,7 @@ export default function Home() {
           <p className="text-xl mb-8 opacity-90">
             Join thousands of investors using AI to optimize their portfolios
           </p>
-          <SignUpButton mode="modal">
+          <SignUpButton mode="modal" fallbackRedirectUrl="/dashboard">
             <button className="px-8 py-4 bg-accent text-dark font-semibold text-lg rounded-lg hover:bg-yellow-500 transition-colors shadow-lg">
               Get Started Free
             </button>
