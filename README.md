@@ -1,7 +1,6 @@
 # Alex AI Financial Advisor
 
-**Portfolio project — production-grade, multi-agent financial intelligence platform.**  
-Orchestrated LLM agents, serverless AWS, vector RAG on **Amazon S3 Vectors**, and a **Next.js** client with **Clerk** auth — built to show how real AI products are shipped, not just demoed.
+Full-stack portfolio implementation of a multi-agent financial planning application: **Next.js** frontend with **Clerk** authentication, **AWS Lambda** agents and API, **Amazon Aurora Serverless v2** (PostgreSQL) via the **RDS Data API**, embeddings on **Amazon SageMaker**, and vector storage on **Amazon S3 Vectors**.
 
 [![AWS](https://img.shields.io/badge/AWS-Lambda%20%7C%20Aurora%20%7C%20SageMaker-232F3E?style=for-the-badge&logo=amazon-aws&logoColor=FF9900)](https://aws.amazon.com/)
 [![Next.js](https://img.shields.io/badge/Next.js-15-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
@@ -12,29 +11,23 @@ Orchestrated LLM agents, serverless AWS, vector RAG on **Amazon S3 Vectors**, an
 |--|--|
 | **Author** | **Jimmy Kimani** — [github.com/jimmykimani](https://github.com/jimmykimani) |
 | **Live demo** | *Add your CloudFront URL here after deploy* |
-| **Highlights** | Multi-agent **SQS** pipeline · **Aurora Serverless v2** + Data API · **Bedrock** / agent SDKs · **Polygon** market data |
-
-![Project banner](assets/alex.png)
-
-> **For recruiters & engineers:** This README is the system design doc — architecture diagram, stack tables, and deployment map are below. Open in GitHub or in your editor preview for Mermaid rendering.
-
-> In Cursor: right-click this file → **Open Preview** for formatted view.
+| **Stack** | Multi-agent **SQS** workflow · **Aurora Serverless v2** + Data API · **Bedrock** / agent SDKs · **Polygon** market data |
 
 ---
 
-## Why this project stands out
+## Technical approach
 
-- **Agentic architecture** — A real **orchestrator** (Planner Lambda) delegating to specialists (tagging, reporting, charts, retirement) over **SQS**, not a single monolithic prompt.
-- **Modern data plane** — **PostgreSQL on Aurora Serverless v2** via **RDS Data API** (no connection pooling drama in Lambda), secrets in **Secrets Manager**.
-- **Cost-aware RAG** — Embeddings on **SageMaker**; vectors in **S3 Vectors** (course design targets major savings vs. always-on search clusters).
-- **Split API surface** — User JWT API (**HTTP API Gateway** + **Clerk**) vs. ingest API (**REST** + API key): how production systems separate concerns.
-- **IaC discipline** — Terraform split by concern (`terraform/2_*` … `8_*`) so the blast radius of changes stays understandable in interviews.
+- **Agents** — A Planner Lambda consumes **SQS** and invokes specialist Lambdas (tagging, reporting, charts, retirement); state persists through **Aurora** via the **Data API**.
+- **Database** — **PostgreSQL** on **Aurora Serverless v2** with **RDS Data API** (suited to Lambda concurrency patterns); credentials in **Secrets Manager**.
+- **Embeddings & retrieval** — Text embeddings from a **SageMaker** serverless endpoint; vectors stored in **S3 Vectors** as defined in the course architecture.
+- **API boundaries** — End-user traffic uses an **HTTP API** behind **CloudFront** with **Clerk** JWT validation in the API Lambda; document ingestion uses a separate **REST** API with **API keys**.
+- **Infrastructure** — **Terraform** split into staged stacks (`terraform/2_*` … `8_*`) matching deployment dependencies.
 
 ---
 
 ## Attribution
 
-This codebase grows from the **Alex** capstone in the **AI in Production** curriculum (**Edward Donner**). This repository is **my own portfolio copy**: I operate the AWS deployment, env wiring, frontend/auth hardening, and this documentation for hiring managers — not an official course hand-in. Upstream course repo (for comparison / updates): [github.com/ed-donner/alex](https://github.com/ed-donner/alex).
+Derived from the **Alex** capstone in the **AI in Production** curriculum (**Edward Donner**). This repository is maintained as an independent portfolio deployment (AWS, configuration, and documentation here). Upstream reference: [github.com/ed-donner/alex](https://github.com/ed-donner/alex).
 
 ---
 
@@ -162,7 +155,7 @@ For a deeper **agent-only** diagram and sequence flows, see [`guides/agent_archi
 | [`backend/`](backend/) | **Python 3.12** monorepo ( **uv** workspace ): `api`, `database`, agent Lambdas, `ingest`, `scheduler`, `researcher`, etc. |
 | [`terraform/`](terraform/) | Split Terraform stacks per part: `2_sagemaker`, `3_ingestion`, `4_researcher`, `5_database`, `6_agents`, `7_frontend`, `8_enterprise` |
 | [`scripts/`](scripts/) | Helper tooling (see course materials) |
-| [`assets/`](assets/) | Images and static assets for docs |
+| [`assets/`](assets/) | Optional images for docs |
 
 ---
 
@@ -181,7 +174,7 @@ For a deeper **agent-only** diagram and sequence flows, see [`guides/agent_archi
 | **Object storage** | **Amazon S3** — static frontend bucket; separate **S3 Vectors** bucket/index for embeddings |
 | **ML inference** | **Amazon SageMaker** serverless **real-time endpoint** (Hugging Face–style embedding container) |
 | **LLM (research / agents)** | **Amazon Bedrock** (configurable model/region); OpenAI-compatible paths via **OpenAI Agents** / LiteLLM where used |
-| **Scheduling** | **Amazon EventBridge** → Lambda scheduler |
+| **Scheduling** | **Amazon EventBridge Scheduler** → researcher scheduler Lambda |
 | **CDN** | **Amazon CloudFront** in front of S3 website + API origin for `/api/*` |
 | **Observability** | **Amazon CloudWatch** (logs, metrics, Part 8 dashboards) |
 
@@ -290,10 +283,10 @@ For structured help inside an AI IDE, the repo includes **`gameplan.md`**, **`CL
 
 ---
 
-## Git remotes (this portfolio copy)
+## Git remotes
 
-- **`origin`** — this portfolio repository under **jimmykimani** (push here for recruiters).
-- **`upstream`** — optional link to [ed-donner/alex](https://github.com/ed-donner/alex) if you want to merge course updates: `git fetch upstream && git merge upstream/main`.
+- **`origin`** — primary remote ([jimmykimani/alex-ai-financial-advisor](https://github.com/jimmykimani/alex-ai-financial-advisor)).
+- **`upstream`** — optional [ed-donner/alex](https://github.com/ed-donner/alex) for merging course updates: `git fetch upstream && git merge upstream/main`.
 
 ---
 
