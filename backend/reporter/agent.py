@@ -10,6 +10,7 @@ from dataclasses import dataclass
 
 from agents import function_tool, RunContextWrapper
 from agents.extensions.models.litellm_model import LitellmModel
+from src.bedrock_env import ensure_litellm_bedrock_region
 
 logger = logging.getLogger()
 
@@ -189,9 +190,8 @@ def create_agent(job_id: str, portfolio_data: Dict[str, Any], user_data: Dict[st
     model_id = os.getenv("BEDROCK_MODEL_ID", "us.anthropic.claude-3-7-sonnet-20250219-v1:0")
     # Set region for LiteLLM Bedrock calls
     bedrock_region = os.getenv("BEDROCK_REGION", "us-west-2")
-    logger.info(f"DEBUG: BEDROCK_REGION from env = {bedrock_region}")
-    os.environ["AWS_REGION_NAME"] = bedrock_region
-    logger.info(f"DEBUG: Set AWS_REGION_NAME to {bedrock_region}")
+    logger.info(f"Reporter: BEDROCK_REGION={bedrock_region}, model_id={model_id}")
+    ensure_litellm_bedrock_region(bedrock_region)
 
     model = LitellmModel(model=f"bedrock/{model_id}")
 

@@ -13,6 +13,8 @@ from dataclasses import dataclass
 from agents import function_tool, RunContextWrapper
 from agents.extensions.models.litellm_model import LitellmModel
 
+from src.bedrock_env import ensure_litellm_bedrock_region
+
 logger = logging.getLogger()
 
 # Initialize Lambda client
@@ -264,9 +266,8 @@ def create_agent(job_id: str, portfolio_summary: Dict[str, Any], db):
 
     # Get model configuration
     model_id = os.getenv("BEDROCK_MODEL_ID", "us.anthropic.claude-3-7-sonnet-20250219-v1:0")
-    # Set region for LiteLLM Bedrock calls
     bedrock_region = os.getenv("BEDROCK_REGION", "us-west-2")
-    os.environ["AWS_REGION_NAME"] = bedrock_region
+    ensure_litellm_bedrock_region(bedrock_region)
 
     model = LitellmModel(model=f"bedrock/{model_id}")
 

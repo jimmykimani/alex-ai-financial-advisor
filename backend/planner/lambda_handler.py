@@ -32,6 +32,34 @@ logger.setLevel(logging.INFO)
 # Initialize database
 db = Database()
 
+
+def format_planner_error(exc: BaseException) -> str:
+    """Human-readable failure stored on jobs.error_message for the UI."""
+    msg = str(exc).strip() or exc.__class__.__name__
+    if len(msg) > 6000:
+        msg = msg[:6000] + " …(truncated)"
+
+    low = msg.lower()
+    hints = []
+    if "accessdenied" in low or "access denied" in low or "not authorized" in low:
+        hints.append(
+            "Amazon Bedrock: open the Bedrock console for this AWS account → Model access "
+            "and enable the model matching BEDROCK_MODEL_ID. Match BEDROCK_REGION to the region "
+            "where that model is offered."
+        )
+    if "validationexception" in low and "model" in low:
+        hints.append(
+            "Verify BEDROCK_MODEL_ID is valid for your account (some IDs require inference profiles)."
+        )
+    if "expiredtoken" in low or "security token" in low:
+        hints.append("Check Lambda execution role and STS/session validity for this region.")
+    if "throttl" in low or "too many requests" in low:
+        hints.append("Bedrock throttled the request; retry later or request a quota increase.")
+
+    if hints:
+        msg = msg + " — " + " ".join(hints)
+    return msg
+
 @retry(
     retry=retry_if_exception_type(RateLimitError),
     stop=stop_after_attempt(5),
@@ -80,7 +108,7 @@ async def run_orchestrator(job_id: str) -> None:
             
     except Exception as e:
         logger.error(f"Planner: Error in orchestration: {e}", exc_info=True)
-        db.jobs.update_status(job_id, 'failed', error_message=str(e))
+        db.jobs.update_status(job_id, "failed", error_message=format_planner_error(e))
         raise
 
 def lambda_handler(event, context):

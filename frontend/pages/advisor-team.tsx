@@ -20,6 +20,8 @@ interface Job {
   created_at: string;
   status: string;
   job_type: string;
+  /** Present when status is failed — matches API / DB column error_message */
+  error_message?: string;
 }
 
 interface AnalysisProgress {
@@ -117,11 +119,15 @@ export default function AdvisorTeam() {
               router.push(`/analysis?job_id=${jobId}`);
             }, 1500);
           } else if (job.status === 'failed') {
+            const failDetail =
+              job.error_message ||
+              (job as { error?: string }).error ||
+              'Analysis encountered an error';
             setProgress({
               stage: 'error',
               message: 'Analysis failed',
               activeAgents: [],
-              error: job.error || 'Analysis encountered an error'
+              error: failDetail,
             });
 
             if (pollInterval) {
@@ -130,7 +136,7 @@ export default function AdvisorTeam() {
             }
 
             // Emit failure event
-            emitAnalysisFailed(jobId, job.error);
+            emitAnalysisFailed(jobId, failDetail);
 
             setIsAnalyzing(false);
             setCurrentJobId(null);
@@ -218,7 +224,12 @@ export default function AdvisorTeam() {
           });
         }, 5000);
       } else {
-        throw new Error('Failed to start analysis');
+        const errBody = await response.json().catch(() => ({}));
+        const detail =
+          typeof errBody.detail === 'string'
+            ? errBody.detail
+            : `HTTP ${response.status}`;
+        throw new Error(detail);
       }
     } catch (error) {
       console.error('Error starting analysis:', error);
@@ -391,11 +402,30 @@ export default function AdvisorTeam() {
                         <p className="text-xs text-gray-500">
                           {formatDate(job.created_at)}
                         </p>
+                        {job.status === 'failed' && job.error_message && (
+                          <p
+                            className="text-xs text-red-700 mt-2 line-clamp-2 max-w-xl"
+                            title={job.error_message}
+                          >
+                            {job.error_message}
+                          </p>
+                        )}
                       </div>
                       <div className="flex items-center space-x-4">
                         <span className={`text-sm font-medium ${getStatusColor(job.status)}`}>
                           {job.status.charAt(0).toUpperCase() + job.status.slice(1)}
                         </span>
+                        {job.status === 'failed' && job.error_message && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              router.push(`/analysis?job_id=${job.id}`)
+                            }
+                            className="px-4 py-2 border border-red-300 text-red-800 rounded-lg hover:bg-red-50 text-sm font-semibold"
+                          >
+                            Details
+                          </button>
+                        )}
                         {job.status === 'completed' && (
                           <button
                             onClick={() => router.push(`/analysis?job_id=${job.id}`)}

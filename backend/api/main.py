@@ -494,6 +494,13 @@ async def trigger_analysis(request: AnalyzeRequest, clerk_user_id: str = Depends
     """Trigger portfolio analysis"""
 
     try:
+        if not (SQS_QUEUE_URL or "").strip():
+            logger.error("analyze: SQS_QUEUE_URL is not configured on this Lambda")
+            raise HTTPException(
+                status_code=503,
+                detail="Analysis queue is not configured. Set SQS_QUEUE_URL on the API Lambda (Terraform Part 7 / Part 6 outputs) and redeploy.",
+            )
+
         # Get user
         user = db.users.find_by_clerk_id(clerk_user_id)
 

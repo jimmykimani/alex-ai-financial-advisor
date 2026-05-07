@@ -10,6 +10,7 @@ from decimal import Decimal
 from pydantic import BaseModel, Field, field_validator, ConfigDict
 from agents import Agent, Runner, trace
 from agents.extensions.models.litellm_model import LitellmModel
+from src.bedrock_env import ensure_litellm_bedrock_region
 from dotenv import load_dotenv
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 from litellm.exceptions import RateLimitError
@@ -174,9 +175,8 @@ async def classify_instrument(
         # Initialize the model
         model_id = BEDROCK_MODEL_ID
 
-        # Set region for LiteLLM Bedrock calls
         bedrock_region = os.getenv("BEDROCK_REGION", "us-west-2")
-        os.environ["AWS_REGION_NAME"] = bedrock_region
+        ensure_litellm_bedrock_region(bedrock_region)
 
         model = LitellmModel(model=f"bedrock/{model_id}")
 
