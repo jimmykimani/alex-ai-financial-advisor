@@ -6,9 +6,6 @@ Does **not** run an analysis or call model inference — no Bedrock token usage.
 Use this before `package_native.py` / `terraform apply` so you do not ship when
 the environment is misconfigured.
 
-Optional full pipeline test (uses Bedrock tokens; can fail on daily quota):
-    cd backend/planner && uv run test_full.py
-
 Usage:
     cd scripts && uv sync && uv run python verify_analysis_ready.py
 """
@@ -134,7 +131,7 @@ def main() -> int:
     br_region = os.environ["BEDROCK_REGION"].strip()
     try:
         br = boto3.client("bedrock", region_name=br_region)
-        br.list_foundation_models(maxResults=5)
+        br.list_foundation_models()
         print(f"OK  Bedrock API in {br_region} (list models only; does not invoke)")
     except ClientError as e:
         print(f"FAIL  Bedrock list_models in {br_region}: {e}")
@@ -145,10 +142,6 @@ def main() -> int:
 
     print()
     print("All preflight checks passed.")
-    print()
-    print("Next (optional, uses Bedrock tokens — run when quota allows):")
-    print("  cd backend/planner && uv run test_full.py")
-    print("Then package and apply Terraform as usual.")
     return 0
 
 
