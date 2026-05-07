@@ -9,8 +9,9 @@ import logging
 from typing import Dict, Any
 
 from agents import Agent, Runner, trace
-from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
-from litellm.exceptions import RateLimitError
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception
+
+from src.litellm_retry import retry_litellm_rate_limit_if_transient
 
 try:
     from dotenv import load_dotenv
@@ -55,16 +56,24 @@ def format_planner_error(exc: BaseException) -> str:
         hints.append("Check Lambda execution role and STS/session validity for this region.")
     if "throttl" in low or "too many requests" in low:
         hints.append("Bedrock throttled the request; retry later or request a quota increase.")
+    if "tokens per day" in low or ("too many tokens" in low and "day" in low):
+        hints.append(
+            "This AWS account hit the Bedrock model daily token limit. Wait until the quota resets "
+            "(often midnight UTC), use another model/region in terraform.tfvars, or raise the quota "
+            "in AWS Service Quotas → Amazon Bedrock."
+        )
 
     if hints:
         msg = msg + " — " + " ".join(hints)
     return msg
 
 @retry(
-    retry=retry_if_exception_type(RateLimitError),
+    retry=retry_if_exception(retry_litellm_rate_limit_if_transient),
     stop=stop_after_attempt(5),
     wait=wait_exponential(multiplier=1, min=4, max=60),
-    before_sleep=lambda retry_state: logger.info(f"Planner: Rate limit hit, retrying in {retry_state.next_action.sleep} seconds...")
+    before_sleep=lambda retry_state: logger.info(
+        f"Planner: Transient rate limit, retrying in {retry_state.next_action.sleep} seconds..."
+    ),
 )
 async def run_orchestrator(job_id: str) -> None:
     """Run the orchestrator agent to coordinate portfolio analysis."""

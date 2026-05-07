@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '@clerk/nextjs';
 import Layout from '../components/Layout';
@@ -77,7 +77,15 @@ export default function AdvisorTeam() {
     message: '',
     activeAgents: []
   });
-  const [pollInterval, setPollInterval] = useState<NodeJS.Timeout | null>(null);
+  /** Avoid putting interval in React state — updating state cleared the timer and left the UI stuck. */
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const clearPoll = () => {
+    if (pollRef.current !== null) {
+      clearInterval(pollRef.current);
+      pollRef.current = null;
+    }
+  };
 
   useEffect(() => {
     fetchJobs();
@@ -85,6 +93,10 @@ export default function AdvisorTeam() {
   }, []);
 
   useEffect(() => {
+    if (!currentJobId) {
+      return;
+    }
+
     const checkJobStatusLocal = async (jobId: string) => {
       try {
         const token = await getToken();
@@ -98,16 +110,12 @@ export default function AdvisorTeam() {
           const job = await response.json();
 
           if (job.status === 'completed') {
+            clearPoll();
             setProgress({
               stage: 'complete',
               message: 'Analysis complete!',
               activeAgents: []
             });
-
-            if (pollInterval) {
-              clearInterval(pollInterval);
-              setPollInterval(null);
-            }
 
             // Emit completion event so other components can refresh
             emitAnalysisCompleted(jobId);
@@ -119,6 +127,7 @@ export default function AdvisorTeam() {
               router.push(`/analysis?job_id=${jobId}`);
             }, 1500);
           } else if (job.status === 'failed') {
+            clearPoll();
             const failDetail =
               job.error_message ||
               (job as { error?: string }).error ||
@@ -129,11 +138,6 @@ export default function AdvisorTeam() {
               activeAgents: [],
               error: failDetail,
             });
-
-            if (pollInterval) {
-              clearInterval(pollInterval);
-              setPollInterval(null);
-            }
 
             // Emit failure event
             emitAnalysisFailed(jobId, failDetail);
@@ -147,21 +151,16 @@ export default function AdvisorTeam() {
       }
     };
 
-    if (currentJobId && !pollInterval) {
-      const interval = setInterval(() => {
-        checkJobStatusLocal(currentJobId);
-      }, 2000);
-      setPollInterval(interval);
-    }
+    clearPoll();
+    void checkJobStatusLocal(currentJobId);
+    pollRef.current = setInterval(() => {
+      void checkJobStatusLocal(currentJobId);
+    }, 2000);
 
     return () => {
-      if (pollInterval) {
-        clearInterval(pollInterval);
-        setPollInterval(null);
-      }
+      clearPoll();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentJobId, pollInterval, router]);
+  }, [currentJobId, router, getToken]);
 
   const fetchJobs = async () => {
     try {
