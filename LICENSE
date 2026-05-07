@@ -1,6 +1,11 @@
 MIT License
 
 Copyright (c) 2025 Ed Donner
+Copyright (c) 2026 Jimmy Kimani
+
+The upstream “Alex” capstone materials are © Ed Donner. This repository includes an
+independent portfolio deployment, documentation, and further changes by Jimmy Kimani.
+See README for attribution.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
